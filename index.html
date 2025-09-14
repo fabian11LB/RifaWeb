@@ -7,43 +7,44 @@
   <style>
     *{box-sizing:border-box;margin:0;padding:0;font-family:Segoe UI,Arial,Helvetica,sans-serif}
     body{
-      height:100vh;
-      background:url("fondo.png") center top/cover no-repeat;
-      overflow:hidden;
+      min-height:100vh;
+      background:url("fondo.png") top center/contain no-repeat;
       display:flex;
       justify-content:center;
-      align-items:flex-start;
+      align-items:center;
+      position:relative;
     }
-    /* REJILLA FIJA */
+
+    /* CONTENEDOR DE LA REJILLA */
     .grilla{
-      position:fixed;
-      top:var(--top,290px);
-      left:50%;
-      transform:translateX(-50%);
+      position:absolute;
+      /* Ajusta estos valores hasta que coincida con la cuadrícula de fondo */
+      top: 580px;   /* posición vertical de inicio */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 720px; /* ancho total de la cuadrícula */
+      height: 720px;/* alto total de la cuadrícula */
       display:grid;
-      grid-template-columns:repeat(10,var(--cellW,40px));
-      grid-auto-rows:var(--cellH,40px);
-      gap:0;
-      user-select:none;
-      background:rgba(255,255,255,0.85);
-      padding:5px;
-      border-radius:6px;
-      box-shadow:0 2px 8px rgba(0,0,0,.3);
+      grid-template-columns:repeat(10, 1fr);
+      grid-template-rows:repeat(10, 1fr);
     }
+
     /* BOTONES */
     .grilla button{
-      width:100%;height:100%;
       border:1px solid rgba(0,0,0,.25);
       background:transparent;
       cursor:pointer;
-      font-size:calc(var(--cellH) * 0.35);
+      font-size:18px;
+      font-weight:600;
       color:#000;
       transition:all .2s;
     }
     .grilla.ocultarNum button{color:transparent}
+
     /* VENDIDO */
     .grilla button.vendido{
       background:rgba(229,57,53,.45);
+      position:relative;
     }
     .grilla button.vendido::after{
       content:'';position:absolute;
@@ -51,6 +52,7 @@
       width:90%;height:2px;
       background:#b71c1c;
     }
+
     /* MODAL QR */
     .modal{
       position:fixed;inset:0;
@@ -113,7 +115,6 @@
 
     const TOTAL=100,vendidos=new Set(JSON.parse(storage.getItem('vendidos')||'[]'));
     const grilla=document.getElementById('grilla');
-    const root=document.documentElement;
 
     // crea botones 00-99
     for(let i=0;i<TOTAL;i++){
@@ -142,6 +143,16 @@
       if(e.key.toLowerCase()==='v'){
         const n=prompt('¿Qué número vendiste? (00-99)');
         if(n===null)return;
+        const num=n.padStart(2,'0');
+        const btn=[...grilla.children].find(b=>b.textContent===num);
+        if(btn){
+          btn.classList.add('vendido');
+          vendidos.add(parseInt(num).toString());
+          storage.setItem('vendidos',JSON.stringify([...vendidos]));
+        }
+      }
+    });
+</script>
 
-
-
+</body>
+</html>
