@@ -26,14 +26,15 @@
 
     .grid {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 57%;   /* 🔽 baja la cuadrícula */
+      left: 50%;
+      transform: translateX(-50%) scale(1.1); /* centra y agranda un poco */
+      width: 65%;   /* ancho relativo al poster */
+      height: 32%;  /* alto relativo al poster */
       display: grid;
       grid-template-columns: repeat(10, 1fr);
       grid-template-rows: repeat(10, 1fr);
-      pointer-events: none; /* no bloquea clics */
+      pointer-events: none;
     }
 
     .cell {
