@@ -26,21 +26,22 @@
 
     .grid {
       position: absolute;
-      top: 780px;   /* distancia desde arriba */
-      left: 100px;  /* distancia desde la izquierda */
-      width: 650px; /* ancho total del bloque */
-      height: 600px; /* alto total del bloque */
+      top: 57%;   /* 🔽 baja la cuadrícula */
+      left: 50%;
+      transform: translateX(-50%) scale(1.1); /* centra y agranda un poco */
+      width: 65%;   /* ancho relativo al poster */
+      height: 32%;  /* alto relativo al poster */
       display: grid;
       grid-template-columns: repeat(10, 1fr);
       grid-template-rows: repeat(10, 1fr);
-      pointer-events: none; /* para que no tape clics */
+      pointer-events: none;
     }
 
     .cell {
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 18px;
+      font-size: 12px;
       font-weight: bold;
       color: black;
     }
