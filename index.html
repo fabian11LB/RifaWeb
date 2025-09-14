@@ -1,109 +1,114 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Rifa – Visible y fija al zoom</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rifa — Overlay alineado al póster</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Segoe UI, Arial, Helvetica, sans-serif;
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Segoe UI,Arial,Helvetica,sans-serif}
+    body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff;padding:1rem}
+
+    /* VARIABLES (porcentajes para alinear la grilla sobre la imagen) */
+    :root{
+      --topPct: 18.658280922431867%;
+      --leftPct: 13.23283082077052%;
+      --widthPct: 64.99162479061977%;
+      --heightPct: 77.67295597484278%;
     }
-    body {
-      height: 100vh;
-      background: url("fondo.png") center top/contain no-repeat;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
+
+    /* contenedor del póster (imagen) */
+    .poster {
+      position: relative;
+      width: min(600px, 92vw); /* ajustable: ancho máximo del póster en la página */
+      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      background: #fff;
     }
-    :root {
-      --top: 290px;
-      --left: 0px;
-      --cellW: 40px;
-      --cellH: 40px;
+    .poster img {
+      display:block;
+      width:100%;
+      height:auto;
+      user-select:none;
+      -webkit-user-drag: none;
     }
-    /* REJILLA */
+
+    /* GRILLA: posicionada respecto al contenedor .poster usando % */
     .grilla {
-      position: fixed;
-      top: var(--top);
-      left: 50%;
-      transform: translateX(-50%);
+      position: absolute;
+      top: var(--topPct);
+      left: var(--leftPct);
+      width: var(--widthPct);
+      height: var(--heightPct);
       display: grid;
-      grid-template-columns: repeat(10, var(--cellW));
-      grid-auto-rows: var(--cellH);
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
       gap: 0;
+      pointer-events: auto;
       user-select: none;
     }
-    /* BOTONES */
-    .grilla button {
-      width: 100%;
-      height: 100%;
-      border: 1px solid rgba(0,0,0,.15);
-      background: transparent;
+
+    .grilla button{
+      width:100%; height:100%;
+      border: 1px solid rgba(0,0,0,.12);
+      background: rgba(255,255,255,0.12);
       cursor: pointer;
       position: relative;
-      font-size: calc(var(--cellH) * 0.35);
-      color: #000;
-      transition: color .2s;
+      font-size: calc(min(2.4vmin, 18px));
+      color:#000;
+      transition: color .15s, background .15s;
     }
-    /* cuando ocultamos números */
-    .grilla.ocultarNum button {
-      color: transparent;
+
+    .grilla.ocultarNum button{ color: transparent; }
+
+    .grilla button.vendido{
+      background: rgba(229,57,53,0.45);
+      color: #400;
     }
-    /* vendido */
-    .grilla button.vendido {
-      background: rgba(229, 57, 53, .45);
+    .grilla button.vendido::after{
+      content:'';
+      position:absolute; inset:0; margin:auto;
+      width:90%; height:2px; background:#b71c1c;
     }
-    .grilla button.vendido::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      margin: auto;
-      width: 90%;
-      height: 2px;
-      background: #b71c1c;
+
+    /* modal QR (fijo en pantalla) */
+    .modal{
+      position:fixed; inset:0; display:none;
+      align-items:center; justify-content:center;
+      background:rgba(0,0,0,.55); padding:1rem; z-index:999;
     }
-    /* MODAL QR */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.55);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
+    .modal.visible{ display:flex; }
+    .modal-content{
+      background:#fff; padding:1rem; border-radius:8px; max-width:360px; width:100%;
+      text-align:center; box-shadow:0 6px 24px rgba(0,0,0,.2);
     }
-    .modal.visible { display: flex; }
-    .modal-content {
-      background: #fff;
-      padding: 1.2rem 1.5rem;
-      border-radius: 8px;
-      text-align: center;
-      max-width: 320px;
-      box-shadow: 0 2px 10px rgba(0,0,0,.25);
+    .modal-content img{ width:100%; height:auto; margin:.7rem 0; }
+    .modal-content button{ padding:.45rem .9rem; border-radius:6px; border:none; background:#d40055; color:#fff; cursor:pointer; }
+    /* ayuda rápida: indicador de modo ajuste */
+    .status {
+      margin-top:.6rem; font-size:13px; color:#444; text-align:center;
     }
-    .modal-content img {
-      width: 100%;
-      margin: .8rem 0;
-    }
-    .modal-content button {
-      padding: .4rem 1rem;
-      border: none;
-      background: #d40055;
-      color: #fff;
-      border-radius: 4px;
-      cursor: pointer;
+
+    @media (max-width:420px){
+      .poster{ width: 94vw; }
+      .grilla button{ font-size: 9px; }
     }
   </style>
 </head>
 <body>
 
-  <div class="grilla" id="grilla"></div>
+  <div style="max-width:640px;width:100%">
+    <div class="poster" id="posterWrap">
+      <!-- Reemplaza poster.png por el nombre de tu imagen del flyer -->
+      <img id="posterImg" src="poster.png" alt="Póster rifa — coloca aquí tu imagen">
+      <div class="grilla" id="grilla" aria-hidden="false"></div>
+    </div>
 
-  <div class="modal" id="modal">
+    <div class="status" id="statusLine">
+      Atajos: <strong>V</strong> vender · <strong>G</strong> ocultar/mostrar números · <strong>A</strong> modo ajuste (flechas / [ ] / +/-). Usa A para activar mover/ajustar.
+    </div>
+  </div>
+
+  <!-- Modal QR -->
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
       <h3 id="tituloQR">Número 00</h3>
       <img id="imgQR" src="" alt="Código QR">
@@ -113,127 +118,147 @@
   </div>
 
   <script>
-    /* ---------- LOCALSTORAGE SEGURO ---------- */
+    /* ----------------- util: localStorage seguro ----------------- */
     function safeSetItem(key, value){
       try { localStorage.setItem(key, value); }
-      catch(e){ console.warn("localStorage no disponible", e); }
+      catch(e){ /* no disponible (modo privado, bloqueo) */ }
     }
     function safeGetItem(key){
       try { return localStorage.getItem(key); }
       catch(e){ return null; }
     }
+    function readFloat(key, fallback){ const v = safeGetItem(key); return v !== null ? parseFloat(v) : fallback; }
 
+    /* ----------------- parámetros iniciales (porcentajes detectados) ----------------- */
+    // valores por defecto calculados desde la imagen que subiste
+    const DEF = {
+      topPct: 18.658280922431867,
+      leftPct: 13.23283082077052,
+      widthPct: 64.99162479061977,
+      heightPct: 77.67295597484278
+    };
+
+    let topPct   = readFloat('grillaTopPct', DEF.topPct);
+    let leftPct  = readFloat('grillaLeftPct', DEF.leftPct);
+    let widthPct = readFloat('grillaWidthPct', DEF.widthPct);
+    let heightPct= readFloat('grillaHeightPct', DEF.heightPct);
+
+    const root = document.documentElement;
+    function aplicarPos(){
+      root.style.setProperty('--topPct', topPct + '%');
+      root.style.setProperty('--leftPct', leftPct + '%');
+      root.style.setProperty('--widthPct', widthPct + '%');
+      root.style.setProperty('--heightPct', heightPct + '%');
+    }
+    aplicarPos();
+
+    /* ----------------- generación de botones (10x10) ----------------- */
     const TOTAL = 100;
     const vendidos = new Set(JSON.parse(safeGetItem('vendidos') || '[]'));
     const grilla = document.getElementById('grilla');
-    const root = document.documentElement;
 
-    /* crea botones 00-99 */
-    for (let i=0; i<TOTAL; i++){
+    for (let i=0;i<TOTAL;i++){
       const b = document.createElement('button');
+      b.type = 'button';
       b.textContent = i.toString().padStart(2,'0');
       b.dataset.num = i;
       b.addEventListener('click', abrirQR);
-      if (vendidos.has(i.toString())) {
-        b.classList.add('vendido');
-      }
+      if (vendidos.has(i.toString())) b.classList.add('vendido');
       grilla.appendChild(b);
     }
 
-    /* MODAL */
+    /* ----------------- modal QR ----------------- */
     function abrirQR(e){
-      const num = e.target.dataset.num;
-      if (vendidos.has(num)) return;
-      const m = document.getElementById('modal'),
-            t = document.getElementById('tituloQR'),
-            i = document.getElementById('imgQR');
+      const num = e.currentTarget.dataset.num;
+      if (vendidos.has(num)) return; // si ya vendido no mostrar modal (igual que antes)
+      const m = document.getElementById('modal'), t=document.getElementById('tituloQR'), i=document.getElementById('imgQR');
       t.textContent = `Número ${num.padStart(2,'0')}`;
+      // reemplaza 'qrnequi.png' por la imagen QR que quieras mostrar
       i.src = 'qrnequi.png';
       m.classList.add('visible');
+      m.setAttribute('aria-hidden','false');
     }
-    document.getElementById('cerrarModal').onclick =
-      () => document.getElementById('modal').classList.remove('visible');
+    document.getElementById('cerrarModal').onclick = ()=> {
+      const m = document.getElementById('modal');
+      m.classList.remove('visible');
+      m.setAttribute('aria-hidden','true');
+    };
 
-    /* VENDER (tecla V) */
+    /* ----------------- vender con tecla V ----------------- */
     window.addEventListener('keydown', e=>{
       if (e.key.toLowerCase()==='v'){
         const n = prompt('¿Qué número vendiste? (00-99)');
         if (n===null) return;
         const num = parseInt(n,10);
-        if (num>=0 && num<TOTAL){
+        if (!Number.isNaN(num) && num>=0 && num<TOTAL){
           vendidos.add(num.toString());
           const btn = [...grilla.children].find(b=>b.dataset.num==num);
           if (btn) btn.classList.add('vendido');
-          console.log(`Comprado: ${num.toString().padStart(2,'0')}`);
           safeSetItem('vendidos', JSON.stringify([...vendidos]));
+          console.log(`Comprado: ${num.toString().padStart(2,'0')}`);
         }
       }
     });
 
-    /* ---------- MOSTRAR / OCULTAR NÚMEROS (G) ---------- */
-    let ocultandoNumeros = safeGetItem('ocultarNumeros')==='true';
+    /* ----------------- ocultar/mostrar números G ----------------- */
+    let ocultandoNumeros = safeGetItem('ocultarNumeros') === 'true';
     grilla.classList.toggle('ocultarNum', ocultandoNumeros);
 
-    /* ---------- MODO AJUSTE ---------- */
+    /* ----------------- modo AJUSTE (A) → mover/resize con flechas y teclas */ 
     let ajusteActivo = false;
-    let topPos = parseInt(safeGetItem('rifaTop')||290,10);
-    let leftPos = parseInt(safeGetItem('rifaLeft')||0,10);
-    let cellW  = parseInt(safeGetItem('rifaCellW')||40,10);
-    let cellH  = parseInt(safeGetItem('rifaCellH')||40,10);
-    aplicar();
+    const statusLine = document.getElementById('statusLine');
 
-    function aplicar(){
-      root.style.setProperty('--top', topPos+'px');
-      root.style.setProperty('--left', leftPos+'px');
-      root.style.setProperty('--cellW', cellW+'px');
-      root.style.setProperty('--cellH', cellH+'px');
+    function setStatus(){
+      statusLine.textContent = `Atajos: V vender · G ocultar/mostrar números · A modo ajuste (${ajusteActivo? 'ON — usa flechas / [ ] / + -':'OFF'})`;
     }
+    setStatus();
 
     window.addEventListener('keydown', e=>{
-      /* Toggle números */
+      // G → ocultar números
       if (e.key.toLowerCase()==='g'){
         ocultandoNumeros = !ocultandoNumeros;
         grilla.classList.toggle('ocultarNum', ocultandoNumeros);
         safeSetItem('ocultarNumeros', ocultandoNumeros);
         if (console.clear) console.clear();
-        console.log(ocultandoNumeros?'Números OCULTOS':'Números VISIBLES');
-      }
-
-      /* Toggle ajuste */
-      if (e.key.toLowerCase()==='a'){
-        ajusteActivo = !ajusteActivo;
-        if (console.clear) console.clear();
-        console.log(ajusteActivo?'🔧 MODO AJUSTE ON':'🔒 MODO AJUSTE OFF');
-      }
-      if (!ajusteActivo) return;
-
-      /* Movimiento */
-      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
-        switch(e.key){
-          case 'ArrowUp':    topPos-=3; break;
-          case 'ArrowDown':  topPos+=3; break;
-          case 'ArrowLeft':  leftPos-=3; break;
-          case 'ArrowRight': leftPos+=3; break;
-        }
-        aplicar();
-        safeSetItem('rifaTop', topPos);
-        safeSetItem('rifaLeft', leftPos);
-        e.preventDefault();
+        console.log(ocultandoNumeros ? 'Números OCULTOS' : 'Números VISIBLES');
         return;
       }
 
-      /* Ajuste tamaño: usamos [, ], -, + */
-      switch(e.key){
-        case '+': case '=': cellH++; break;  // más alto
-        case '-': case '_': cellH=Math.max(20, cellH-1); break; // menos alto
-        case '[': cellW=Math.max(20, cellW-1); break; // menos ancho
-        case ']': cellW++; break;  // más ancho
-        default:return;
+      // A → toggle ajuste
+      if (e.key.toLowerCase()==='a'){
+        ajusteActivo = !ajusteActivo;
+        setStatus();
+        if (console.clear) console.clear();
+        console.log(ajusteActivo ? '🔧 MODO AJUSTE ON' : '🔒 MODO AJUSTE OFF');
+        return;
       }
-      aplicar();
-      safeSetItem('rifaCellW', cellW);
-      safeSetItem('rifaCellH', cellH);
-      e.preventDefault();
+
+      if (!ajusteActivo) return;
+
+      // ajuste con flechas: mover top/left en porcentaje
+      const step = 0.4; // porcentaje por pulsación
+      if (e.key === 'ArrowUp'){ topPct = Math.max(0, topPct - step); aplicarPos(); safeSetItem('grillaTopPct', topPct); e.preventDefault(); return; }
+      if (e.key === 'ArrowDown'){ topPct = Math.min(100, topPct + step); aplicarPos(); safeSetItem('grillaTopPct', topPct); e.preventDefault(); return; }
+      if (e.key === 'ArrowLeft'){ leftPct = Math.max(0, leftPct - step); aplicarPos(); safeSetItem('grillaLeftPct', leftPct); e.preventDefault(); return; }
+      if (e.key === 'ArrowRight'){ leftPct = Math.min(100, leftPct + step); aplicarPos(); safeSetItem('grillaLeftPct', leftPct); e.preventDefault(); return; }
+
+      // ajustar tamaño: [ ] modifican ancho, + - modifican alto
+      if (e.key === '['){ widthPct = Math.max(5, widthPct - step); aplicarPos(); safeSetItem('grillaWidthPct', widthPct); e.preventDefault(); return; }
+      if (e.key === ']'){ widthPct = Math.min(100, widthPct + step); aplicarPos(); safeSetItem('grillaWidthPct', widthPct); e.preventDefault(); return; }
+      if (e.key === '+' || e.key === '='){ heightPct = Math.min(100, heightPct + step); aplicarPos(); safeSetItem('grillaHeightPct', heightPct); e.preventDefault(); return; }
+      if (e.key === '-' || e.key === '_'){ heightPct = Math.max(5, heightPct - step); aplicarPos(); safeSetItem('grillaHeightPct', heightPct); e.preventDefault(); return; }
+    });
+
+    /* ----------------- último: si imagen no existe, mostrar pista ----------------- */
+    const posterImg = document.getElementById('posterImg');
+    posterImg.addEventListener('error', ()=>{
+      posterImg.style.display = 'none';
+      const wrap = document.getElementById('posterWrap');
+      const warn = document.createElement('div');
+      warn.style.padding = '2rem';
+      warn.style.textAlign = 'center';
+      warn.innerHTML = '<strong>Coloca tu imagen del póster en el mismo directorio y nómbrala <code>poster.png</code> (o edita el src en el HTML).</strong>';
+      wrap.appendChild(warn);
     });
   </script>
 </body>
