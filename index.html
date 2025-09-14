@@ -28,15 +28,15 @@
     /* --- VALORES ABSOLUTOS MODIFICADOS (sin cálculos) --- */
     .grid {
       position:absolute;
-      top: 65%;           /* subí la cuadrícula respecto al 57% anterior (valor fijo) */
+      top: 75%;
       left: 50%;
-      transform: translateX(-50%); /* sólo para centrar horizontalmente */
-      width: 80%;         /* antes 65% → ahora ~+15% (valor fijo) */
-      height: 48%;        /* antes 32% → ahora ~+15% (valor fijo) */
+      transform: translateX(-50%);
+      width: 80%;
+      height: 48%;
       display:grid;
       grid-template-columns:repeat(10,1fr);
       grid-template-rows:repeat(10,1fr);
-      pointer-events:none; /* no bloquea la interacción con la página */
+      pointer-events:none;
       z-index:2;
     }
 
@@ -73,6 +73,7 @@
   </div>
 </body>
 </html>
+
 
 
 
