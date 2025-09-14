@@ -1,158 +1,140 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Rifa con SVG Overlay</title>
-<style>
-  body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    background: #fafafa;
-  }
-
-  .wrap {
-    width: min(800px, 95vw); /* controla el tamaño visible */
-  }
-
-  svg {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-
-  rect.cell {
-    fill: rgba(255,255,255,0); /* invisible pero clickeable */
-    cursor: pointer;
-    transition: fill .2s;
-  }
-  rect.cell:hover {
-    fill: rgba(0,0,0,0.08); /* hover */
-  }
-  rect.cell.vendido {
-    fill: rgba(229,57,53,0.45); /* marcado vendido */
-  }
-
-  /* Modal simple */
-  .modal {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.55);
-    display: none; justify-content: center; align-items: center;
-  }
-  .modal.visible { display: flex; }
-  .modal-content {
-    background: #fff;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    text-align: center;
-    max-width: 300px;
-  }
-  .modal-content img { max-width: 100%; }
-</style>
+  <meta charset="UTF-8">
+  <title>Rifa – LocalStorage + SVG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body{
+      font-family:Segoe UI,Arial,Helvetica,sans-serif;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      background:#f8f8f8;
+    }
+    .contenedor{
+      position:relative;
+      width:500px;   /* Ajusta tamaño visible */
+      max-width:100%;
+    }
+    .contenedor img{
+      width:100%;
+      display:block;
+      border-radius:8px;
+    }
+    .contenedor svg{
+      position:absolute;
+      top:0;left:0;
+      width:100%;height:100%;
+    }
+    rect{
+      fill:transparent;
+      stroke:rgba(0,0,0,.15);
+      cursor:pointer;
+    }
+    rect.vendido{
+      fill:rgba(229,57,53,.45);
+    }
+    text{
+      font-size:12px;
+      fill:black;
+      pointer-events:none; /* clic solo en rect */
+    }
+    /* MODAL */
+    .modal{
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.55);
+      display:flex;align-items:center;justify-content:center;
+      display:none;
+    }
+    .modal.visible{display:flex}
+    .modal-content{
+      background:#fff;padding:1rem;border-radius:8px;text-align:center;max-width:320px
+    }
+    .modal-content img{width:100%;margin:1rem 0}
+    .modal-content button{
+      padding:.4rem 1rem;border:none;background:#d40055;color:#fff;border-radius:4px;cursor:pointer
+    }
+  </style>
 </head>
 <body>
 
-<div class="wrap">
-  <svg id="svgRifa" xmlns="http://www.w3.org/2000/svg"></svg>
+<div class="contenedor">
+  <img src="fondo.png" alt="Rifa fondo">
+  <svg id="overlay"></svg>
 </div>
 
 <!-- Modal -->
 <div class="modal" id="modal">
   <div class="modal-content">
     <h3 id="tituloQR">Número 00</h3>
-    <img id="imgQR" src="qrnequi.png" alt="QR Nequi">
-    <br><br>
+    <img id="imgQR" src="qrnequi.png" alt="QR">
+    <br>
     <button id="cerrarModal">Cerrar</button>
   </div>
 </div>
 
 <script>
-(async function(){
-  // --- Carga imagen para conocer dimensiones ---
-  const src = "fondo.png";
-  const img = new Image();
-  img.src = src;
-  await img.decode();
-  const W = img.naturalWidth;
-  const H = img.naturalHeight;
+  const overlay=document.getElementById("overlay");
+  const filas=10,columnas=10;
+  const vendidos=new Set(JSON.parse(localStorage.getItem("vendidos")||"[]"));
 
-  // --- Crea SVG con viewBox ---
-  const svg = document.getElementById("svgRifa");
-  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  function crearOverlay(){
+    overlay.innerHTML="";
+    for(let f=0;f<filas;f++){
+      for(let c=0;c<columnas;c++){
+        let num=f*10+c;
+        let txt=num.toString().padStart(2,"0");
 
-  // Imagen dentro del SVG
-  const svgns = "http://www.w3.org/2000/svg";
-  const image = document.createElementNS(svgns, "image");
-  image.setAttribute("href", src);
-  image.setAttribute("x", 0);
-  image.setAttribute("y", 0);
-  image.setAttribute("width", W);
-  image.setAttribute("height", H);
-  svg.appendChild(image);
+        // casilla
+        let rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
+        rect.setAttribute("x",`${c*10}%`);
+        rect.setAttribute("y",`${f*10}%`);
+        rect.setAttribute("width","10%");
+        rect.setAttribute("height","10%");
+        rect.dataset.num=num;
+        if(vendidos.has(num))rect.classList.add("vendido");
+        rect.addEventListener("click",()=>abrirQR(num));
+        overlay.appendChild(rect);
 
-  // --- Definir posición de la cuadrícula dentro de la imagen ---
-  const grid = {
-    x: 100,  // ajusta según donde empieza la grilla en tu fondo
-    y: 780,
-    width: 650,
-    height: 600
-  };
-
-  const cols = 10, rows = 10;
-  const cellW = grid.width / cols;
-  const cellH = grid.height / rows;
-
-  // Recuperar vendidos del localStorage
-  const vendidos = new Set(JSON.parse(localStorage.getItem("vendidos") || "[]"));
-
-  // --- Crear las celdas ---
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const num = (r*cols + c).toString().padStart(2,'0');
-      const rect = document.createElementNS(svgns, "rect");
-      rect.setAttribute("x", grid.x + c*cellW);
-      rect.setAttribute("y", grid.y + r*cellH);
-      rect.setAttribute("width", cellW);
-      rect.setAttribute("height", cellH);
-      rect.classList.add("cell");
-      rect.dataset.num = num;
-      if (vendidos.has(num)) rect.classList.add("vendido");
-
-      rect.addEventListener("click", ()=>abrirQR(num, rect));
-      svg.appendChild(rect);
+        // texto
+        let text=document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x",`${c*10+5}%`);
+        text.setAttribute("y",`${f*10+6}%`);
+        text.setAttribute("text-anchor","middle");
+        text.textContent=txt;
+        overlay.appendChild(text);
+      }
     }
   }
 
-  // --- Modal ---
-  const modal = document.getElementById("modal");
-  const titulo = document.getElementById("tituloQR");
-  document.getElementById("cerrarModal").onclick = ()=>modal.classList.remove("visible");
-
-  function abrirQR(num, rectEl){
-    if (rectEl.classList.contains("vendido")) return;
-    titulo.textContent = "Número " + num;
-    modal.classList.add("visible");
+  function abrirQR(num){
+    if(vendidos.has(num))return;
+    document.getElementById("tituloQR").textContent="Número "+num.toString().padStart(2,"0");
+    document.getElementById("modal").classList.add("visible");
   }
 
-  // --- Atajo V: marcar vendido manualmente ---
-  window.addEventListener("keydown", e=>{
-    if (e.key.toLowerCase()==="v"){
-      const n = prompt("¿Qué número vendiste? (00-99)");
-      if (!n) return;
-      const num = n.padStart(2,"0");
-      const rect = svg.querySelector(`rect[data-num="${num}"]`);
-      if (rect){
-        rect.classList.add("vendido");
+  document.getElementById("cerrarModal").onclick=()=>{
+    document.getElementById("modal").classList.remove("visible");
+  }
+
+  // vender con tecla V
+  window.addEventListener("keydown",e=>{
+    if(e.key.toLowerCase()==="v"){
+      let n=prompt("¿Qué número vendiste? (00-99)");
+      if(!n)return;
+      let num=parseInt(n,10);
+      if(num>=0 && num<100){
         vendidos.add(num);
-        localStorage.setItem("vendidos", JSON.stringify([...vendidos]));
+        localStorage.setItem("vendidos",JSON.stringify([...vendidos]));
+        crearOverlay();
       }
     }
   });
 
-})();
+  crearOverlay();
 </script>
+
 </body>
 </html>
