@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Rifa – Firebase</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Segoe UI,Arial,Helvetica,sans-serif}
+    body{
+      height:100vh;
+      background:url("fondo.png") center top/contain no-repeat;
+      overflow:hidden;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+    .grilla{
+      position:fixed;
+      top:var(--top,290px);
+      left:50%;
+      transform:translateX(-50%);
+      display:grid;
+      grid-template-columns:repeat(10,var(--cellW,40px));
+      grid-auto-rows:var(--cellH,40px);
+      gap:0;
+      user-select:none;
+    }
+    .grilla button{
+      width:100%;height:100%;
+      border:1px solid rgba(0,0,0,.15);
+      background:transparent;
+      cursor:pointer;position:relative;
+      font-size:calc(var(--cellH) * 0.35);
+      color:#000;transition:color .2s;
+    }
+    .grilla.ocultarNum button{color:transparent}
+    .grilla button.vendido{
+      background:rgba(229, 57, 53, .45);
+    }
+    .grilla button.vendido::after{
+      content:'';position:absolute;
+      inset:0;margin:auto;
+      width:90%;height:2px;
+      background:#b71c1c;
+    }
+    .modal{
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.55);
+      display:flex;align-items:center;justify-content:center;
+      padding:1rem;display:none;
+    }
+    .modal.visible{display:flex}
+    .modal-content{
+      background:#fff;padding:1.2rem 1.5rem;border-radius:8px;
+      text-align:center;max-width:320px
+    }
+    .modal-content img{width:100%;margin:.8rem 0}
+    .modal-content button{padding:.4rem 1rem;border:none;background:#d40055;color:#fff;border-radius:4px;cursor:pointer}
+  </style>
+</head>
+<body>
+
+  <div class="grilla" id="grilla"></div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h3 id="tituloQR">Número 00</h3>
+      <img id="imgQR" src="" alt="Código QR">
+      <br>
+      <button id="cerrarModal">Cerrar</button>
+    </div>
+  </div>
+
+  <script type="module">
+    // Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+    import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9-YqVkpWKONaEA63Rh3qzj7QJormehtA",
+      authDomain: "rifapasto.firebaseapp.com",
+      databaseURL: "https://rifapasto-default-rtdb.firebaseio.com/",
+      projectId: "rifapasto",
+      storageBucket: "rifapasto.firebasestorage.app",
+      messagingSenderId: "662395779039",
+      appId: "1:662395779039:web:f1b1d2a1233aa8add5766a",
+      measurementId: "G-7KBH8HD5HT"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getDatabase(app);
+
+    const TOTAL=100;
+    let vendidos = new Set();
+    const grilla=document.getElementById('grilla');
+    const root=document.documentElement;
+
+    // ---------------- CREAR BOTONES ----------------
+    for(let i=0;i<TOTAL;i++){
+      const b=document.createElement('button');
+      b.textContent=i.toString().padStart(2,'0');
+      b.dataset.num=i;
+      b.addEventListener('click',abrirQR);
+      grilla.appendChild(b);
+    }
+
+    // ---------------- MODAL ----------------
+    function abrirQR(e){
+      const num=e.target.dataset.num;
+      if(vendidos.has(num))return;
+      const m=document.getElementById('modal'),
+            t=document.getElementById('tituloQR'),
+            i=document.getElementById('imgQR');
+      t.textContent=`Número ${num.padStart(2,'0')}`;
+      i.src='qrnequi.png';
+      m.classList.add('visible');
+    }
+    document.getElementById('cerrarModal').onclick=()=>document.getElementById('modal').classList.remove('visible');
+
+    // ---------------- CARGAR VENDIDOS ----------------
+    async function cargarVendidos(){
+      const snapshot = await get(child(ref(db), 'rifa/vendidos'));
+      if(snapshot.exists()){
+        vendidos = new Set(snapshot.val());
+      }
+      pintarVendidos();
+    }
+
+    function pintarVendidos(){
+      [...grilla.children].forEach(b=>{
+        if(vendidos.has(b.dataset.num)) b.classList.add('vendido');
+      });
+    }
+
+    // ---------------- GUARDAR VENDIDO ----------------
+    function guardarVendidos(){
+      update(ref(db, 'rifa'), { vendidos: [...vendidos] });
+    }
+
+    // ---------------- CARGAR CONFIG ----------------
+    let ocultandoNumeros=false;
+    let ajusteActivo=false;
+    let topPos=290, leftPos=0, cellW=40, cellH=40;
+
+    async function cargarConfig(){
+      const snapshot = await get(child(ref(db), 'rifa/config'));
+      if(snapshot.exists()){
+        const cfg = snapshot.val();
+        ocultandoNumeros = cfg.ocultarNumeros ?? false;
+        topPos = cfg.rifaTop ?? 290;
+        leftPos = cfg.rifaLeft ?? 0;
+        cellW  = cfg.rifaCellW ?? 40;
+        cellH  = cfg.rifaCellH ?? 40;
+      }
+      aplicar();
+      grilla.classList.toggle('ocultarNum', ocultandoNumeros);
+    }
+
+    function guardarConfig(){
+      update(ref(db, 'rifa/config'), {
+        ocultarNumeros,
+        rifaTop: topPos,
+        rifaLeft: leftPos,
+        rifaCellW: cellW,
+        rifaCellH: cellH
+      });
+    }
+
+    function aplicar(){
+      root.style.setProperty('--top',topPos+'px');
+      root.style.setProperty('--left',leftPos+'px');
+      root.style.setProperty('--cellW',cellW+'px');
+      root.style.setProperty('--cellH',cellH+'px');
+    }
+
+    // ---------------- EVENTOS TECLADO ----------------
+    window.addEventListener('keydown',e=>{
+      if(e.key.toLowerCase()==='v'){
+        const n=prompt('¿Qué número vendiste? (00-99)');
+        if(n===null)return;
+        const num=parseInt(n,10);
+        if(num>=0&&num<TOTAL){
+          vendidos.add(num.toString());
+          const btn=[...grilla.children].find(b=>b.dataset.num==num);
+          btn.classList.add('vendido');
+          console.log(`Comprado: ${num.toString().padStart(2,'0')}`);
+          guardarVendidos();
+        }
+      }
+
+      if(e.key.toLowerCase()==='g'){
+        ocultandoNumeros=!ocultandoNumeros;
+        grilla.classList.toggle('ocultarNum',ocultandoNumeros);
+        guardarConfig();
+        console.clear();
+        console.log(ocultandoNumeros?'Números OCULTOS':'Números VISIBLES');
+      }
+
+      if(e.key.toLowerCase()==='a'){
+        ajusteActivo=!ajusteActivo;
+        console.clear();
+        console.log(ajusteActivo?'🔧 MODO AJUSTE ON':'🔒 MODO AJUSTE OFF');
+      }
+      if(!ajusteActivo)return;
+
+      if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
+        switch(e.key){
+          case 'ArrowUp':    topPos-=3; break;
+          case 'ArrowDown':  topPos+=3; break;
+          case 'ArrowLeft':  leftPos-=3; break;
+          case 'ArrowRight': leftPos+=3; break;
+        }
+        aplicar();
+        guardarConfig();
+        e.preventDefault();
+        return;
+      }
+
+      switch(e.key){
+        case '+': case '=': cellH++; break;
+        case '-': case '_': cellH=Math.max(20,cellH-1); break;
+        case 'z':           cellW++; break;
+        case 'x':           cellW=Math.max(20,cellW-1); break;
+        default:return;
+      }
+      aplicar();
+      guardarConfig();
+      e.preventDefault();
+    });
+
+    // ---------------- INICIO ----------------
+    cargarVendidos();
+    cargarConfig();
+  </script>
+</body>
+</html>
