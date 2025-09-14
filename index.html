@@ -13,27 +13,31 @@
       background: #fff;
     }
 
+    /* Caja contenedora con mismas dimensiones que la imagen */
     .container {
       position: relative;
-      display: inline-block;
+      width: 720px;   /* ancho real de la imagen */
+      height: 1280px; /* alto real de la imagen */
     }
 
     .poster {
-      display: block;
-      max-width: 100%;
-      height: auto;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
     }
 
     .grid {
       position: absolute;
-      top: 780px;   /* distancia desde arriba */
-      left: 100px;  /* distancia desde la izquierda */
-      width: 650px; /* ancho total del bloque */
-      height: 600px; /* alto total del bloque */
+      top: 780px;   /* donde empieza la cuadrícula en la imagen */
+      left: 100px;  /* desde el borde izquierdo */
+      width: 650px; /* ancho total de la cuadrícula */
+      height: 600px; /* alto total de la cuadrícula */
       display: grid;
       grid-template-columns: repeat(10, 1fr);
       grid-template-rows: repeat(10, 1fr);
-      pointer-events: none; /* para que no tape clics */
+      pointer-events: none;
     }
 
     .cell {
@@ -51,7 +55,7 @@
     <!-- Imagen de fondo -->
     <img src="fondo.png" alt="Póster de rifa" class="poster">
 
-    <!-- Cuadrícula encima -->
+    <!-- Cuadrícula -->
     <div class="grid">
       <script>
         for (let i = 0; i < 100; i++) {
