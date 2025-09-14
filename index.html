@@ -1,110 +1,244 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Rifa – Clickable Grid</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body{
-      display:flex;justify-content:center;align-items:center;
-      min-height:100vh;background:#f8f8f8;font-family:sans-serif;
-    }
-    .contenedor{
-      position:relative;
-      width:500px;   /* tamaño visible */
-      max-width:100%;
-    }
-    .contenedor img{
-      width:100%;
-      display:block;
-    }
-    .contenedor svg{
-      position:absolute;top:0;left:0;
-      width:100%;height:100%;
-    }
-    rect{
-      fill:transparent;
-      cursor:pointer;
-    }
-    rect.vendido{fill:rgba(229,57,53,0.45);}
-    /* MODAL */
-    .modal{
-      position:fixed;inset:0;
-      background:rgba(0,0,0,0.6);
-      display:flex;align-items:center;justify-content:center;
-      display:none;
-    }
-    .modal.visible{display:flex}
-    .modal-content{background:#fff;padding:1rem;border-radius:8px;text-align:center}
-    .modal-content img{width:200px;margin:1rem 0}
-    .modal-content button{padding:.5rem 1rem;background:#d40055;color:#fff;border:none;border-radius:4px;cursor:pointer}
-  </style>
+    <meta charset="UTF-8">
+    <title>Rifa Amor y Amistad</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Segoe UI, Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            background-color: #fce4ec; /* Un color de fondo suave */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        /* --- CONTENEDOR PRINCIPAL DE LA RIFA --- */
+        .raffle-container {
+            position: relative; /* Clave para superponer el SVG */
+            width: 100%;
+            max-width: 500px; /* Tamaño máximo para la rifa en pantalla */
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            overflow: hidden; /* Oculta cualquier cosa que se salga del borde redondeado */
+        }
+
+        .raffle-container img {
+            display: block; /* Elimina espacio extra debajo de la imagen */
+            width: 100%;
+            height: auto;
+        }
+
+        /* --- CAPA SVG SUPERPUESTA --- */
+        #svg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #svg-overlay .raffle-spot {
+            fill: transparent; /* Las casillas son invisibles por defecto */
+            cursor: pointer;
+            transition: fill 0.2s ease-in-out;
+        }
+
+        /* Efecto visual al pasar el ratón sobre una casilla libre */
+        #svg-overlay .raffle-spot:not(.sold):hover {
+            fill: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Estilo para las casillas vendidas */
+        #svg-overlay .raffle-spot.sold {
+            fill: rgba(229, 57, 53, 0.55); /* Rojo semitransparente */
+            cursor: not-allowed;
+        }
+
+        /* --- MODAL PARA EL CÓDIGO QR --- */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none; /* Oculto por defecto */
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 1000;
+        }
+
+        .modal.visible {
+            display: flex; /* Se muestra al añadir la clase 'visible' */
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 320px;
+            width: 100%;
+        }
+
+        .modal-content img {
+            width: 100%;
+            max-width: 250px;
+            margin: 1rem 0;
+        }
+
+        .modal-content button {
+            padding: 0.6rem 1.5rem;
+            border: none;
+            background: #d40055;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+    </style>
 </head>
 <body>
 
-<div class="contenedor">
-  <img src="fondo.png" alt="Rifa">
-  <svg id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg>
-</div>
+    <!-- Contenedor principal que envuelve la imagen y la capa SVG -->
+    <div class="raffle-container">
+        <!-- Imagen de fondo de la rifa -->
+        <img src="fondo.png" alt="Rifa Amor y Amistad">
+        
+        <!-- Capa SVG para las áreas interactivas -->
+        <svg id="svg-overlay" viewBox="0 0 1080 1350" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
 
-<!-- Modal -->
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <h3 id="tituloQR">Número 00</h3>
-    <img id="imgQR" src="qrnequi.png" alt="QR">
-    <br>
-    <button id="cerrarModal">Cerrar</button>
-  </div>
-</div>
+    <!-- Modal para mostrar el código QR -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h3 id="tituloQR">Número 00</h3>
+            <img id="imgQR" src="" alt="Código QR">
+            <br>
+            <button id="cerrarModal">Cerrar</button>
+        </div>
+    </div>
 
-<script>
-const overlay=document.getElementById("overlay");
-const filas=10, columnas=10;
-const vendidos=new Set(JSON.parse(localStorage.getItem("vendidos")||"[]"));
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const TOTAL_NUMBERS = 100;
+            const svgOverlay = document.getElementById('svg-overlay');
+            const modal = document.getElementById('modal');
+            const tituloQR = document.getElementById('tituloQR');
+            const imgQR = document.getElementById('imgQR');
 
-// Creamos cuadrícula relativa al viewBox (1000x1000 → % flexible)
-const cellW=1000/columnas;
-const cellH=1000/filas;
+            // Carga los números vendidos desde localStorage o inicializa un array vacío
+            let soldNumbers = new Set(JSON.parse(localStorage.getItem('soldRaffleNumbers') || '[]'));
 
-for(let f=0;f<filas;f++){
-  for(let c=0;c<columnas;c++){
-    let num=f*10+c;
-    let rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
-    rect.setAttribute("x",c*cellW);
-    rect.setAttribute("y",f*cellH);
-    rect.setAttribute("width",cellW);
-    rect.setAttribute("height",cellH);
-    rect.dataset.num=num;
-    if(vendidos.has(num)) rect.classList.add("vendido");
-    rect.addEventListener("click",()=>abrirQR(num));
-    overlay.appendChild(rect);
-  }
-}
+            // --- CONFIGURACIÓN DE LA CUADRÍCULA SVG ---
+            // AJUSTA ESTOS VALORES si la cuadrícula no se alinea perfectamente con tu imagen.
+            // Están basados en un `viewBox` de 1080x1350.
+            const GRID_CONFIG = {
+                startX: 55,      // Coordenada X donde empieza la primera casilla
+                startY: 590,     // Coordenada Y donde empieza la primera casilla
+                cellWidth: 97,   // Ancho de cada casilla
+                cellHeight: 58,  // Alto de cada casilla
+                columns: 10
+            };
 
-function abrirQR(num){
-  if(vendidos.has(num)) return;
-  document.getElementById("tituloQR").textContent="Número "+num.toString().padStart(2,"0");
-  document.getElementById("modal").classList.add("visible");
-}
+            // Función para guardar el estado en localStorage
+            const saveState = () => {
+                localStorage.setItem('soldRaffleNumbers', JSON.stringify([...soldNumbers]));
+            };
 
-document.getElementById("cerrarModal").onclick=()=>document.getElementById("modal").classList.remove("visible");
+            // Función para marcar un número como vendido visualmente
+            const markAsSold = (numStr) => {
+                const rect = svgOverlay.querySelector(`[data-num='${numStr}']`);
+                if (rect) {
+                    rect.classList.add('sold');
+                }
+            };
+            
+            // --- GENERACIÓN DE LA CUADRÍCULA SVG ---
+            for (let i = 0; i < TOTAL_NUMBERS; i++) {
+                const numStr = i.toString().padStart(2, '0');
 
-// vender con tecla V
-window.addEventListener("keydown",e=>{
-  if(e.key.toLowerCase()==="v"){
-    let n=prompt("¿Qué número vendiste? (00-99)");
-    if(!n) return;
-    let num=parseInt(n,10);
-    if(num>=0&&num<100){
-      vendidos.add(num);
-      localStorage.setItem("vendidos",JSON.stringify([...vendidos]));
-      [...overlay.children].forEach(r=>{
-        if(r.dataset.num==num) r.classList.add("vendido");
-      });
-    }
-  }
-});
-</script>
+                // Calcula la posición de cada celda
+                const col = i % GRID_CONFIG.columns;
+                const row = Math.floor(i / GRID_CONFIG.columns);
+                const x = GRID_CONFIG.startX + (col * GRID_CONFIG.cellWidth);
+                const y = GRID_CONFIG.startY + (row * GRID_CONFIG.cellHeight);
 
+                // Crea un elemento <rect> dentro del SVG
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x);
+                rect.setAttribute('y', y);
+                rect.setAttribute('width', GRID_CONFIG.cellWidth);
+                rect.setAttribute('height', GRID_CONFIG.cellHeight);
+                rect.setAttribute('data-num', numStr);
+                rect.classList.add('raffle-spot');
+
+                // Si el número ya estaba vendido, lo marca
+                if (soldNumbers.has(numStr)) {
+                    rect.classList.add('sold');
+                }
+                
+                // Añade el evento de clic para abrir el modal
+                rect.addEventListener('click', () => openQRModal(numStr));
+
+                svgOverlay.appendChild(rect);
+            }
+
+            // --- LÓGICA DEL MODAL ---
+            function openQRModal(numStr) {
+                if (soldNumbers.has(numStr)) {
+                    // Opcional: podrías mostrar una alerta si el número ya está vendido
+                    console.log(`El número ${numStr} ya fue vendido.`);
+                    return;
+                }
+                tituloQR.textContent = `Número ${numStr}`;
+                imgQR.src = 'qrnequi.png'; // Asegúrate de tener esta imagen
+                modal.classList.add('visible');
+            }
+
+            document.getElementById('cerrarModal').onclick = () => {
+                modal.classList.remove('visible');
+            };
+
+            // Cierra el modal si se hace clic fuera del contenido
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('visible');
+                }
+            });
+
+            // --- FUNCIÓN DE ADMINISTRADOR: VENDER NÚMERO MANUALMENTE ---
+            window.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'v') {
+                    const numberToSell = prompt('¿Qué número vendiste? (00-99)');
+                    if (numberToSell === null || isNaN(numberToSell) || numberToSell.trim() === '') return;
+
+                    const num = parseInt(numberToSell, 10);
+                    if (num >= 0 && num < TOTAL_NUMBERS) {
+                        const numStr = num.toString().padStart(2, '0');
+                        if (soldNumbers.has(numStr)) {
+                            alert(`El número ${numStr} ya estaba vendido.`);
+                        } else {
+                            soldNumbers.add(numStr);
+                            markAsSold(numStr);
+                            saveState();
+                            console.log(`Vendido: ${numStr}`);
+                            alert(`El número ${numStr} ha sido marcado como vendido.`);
+                        }
+                    } else {
+                        alert('Número inválido. Debe ser entre 00 y 99.');
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>
