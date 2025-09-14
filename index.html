@@ -15,26 +15,26 @@
 
         body {
             height: 100vh;
-            background-color: #fce4ec;
+            background-color: #fce4ec; /* Color de fondo suave */
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 1rem;
         }
 
-        /* --- CONTENEDOR PRINCIPAL --- */
+        /* --- CONTENEDOR PRINCIPAL DE LA RIFA --- */
         .raffle-container {
-            position: relative;
+            position: relative; /* Clave para superponer el SVG */
             width: 100%;
-            max-width: 500px;
+            max-width: 500px; /* Tamaño máximo para la rifa en pantalla */
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
             overflow: hidden;
-            user-select: none;
+            user-select: none; /* Evita que se seleccione la imagen accidentalmente */
         }
 
         .raffle-container img {
-            display: block;
+            display: block; /* Elimina espacio extra debajo de la imagen */
             width: 100%;
             height: auto;
         }
@@ -45,54 +45,85 @@
         }
 
         #svg-overlay .raffle-spot {
-            fill: transparent;
+            fill: transparent; /* Las casillas son invisibles por defecto */
             cursor: pointer;
             transition: fill 0.2s ease-in-out;
         }
 
+        /* Efecto visual al pasar el ratón sobre una casilla libre */
         #svg-overlay .raffle-spot:not(.sold):hover {
             fill: rgba(255, 255, 255, 0.3);
         }
 
+        /* Estilo para las casillas vendidas */
         #svg-overlay .raffle-spot.sold {
-            fill: rgba(229, 57, 53, 0.55);
+            fill: rgba(229, 57, 53, 0.55); /* Rojo semitransparente */
             cursor: not-allowed;
         }
 
-        /* --- MODAL --- */
+        /* --- MODAL PARA EL CÓDIGO QR --- */
         .modal {
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.6);
-            display: none;
+            display: none; /* Oculto por defecto */
             align-items: center;
             justify-content: center;
             padding: 1rem;
             z-index: 1000;
         }
 
-        .modal.visible { display: flex; }
-        .modal-content {
-            background: #fff; padding: 1.5rem; border-radius: 8px;
-            text-align: center; max-width: 320px; width: 100%;
+        .modal.visible {
+            display: flex; /* Se muestra al añadir la clase 'visible' */
         }
-        .modal-content img { width: 100%; max-width: 250px; margin: 1rem 0; }
+
+        .modal-content {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 320px;
+            width: 100%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-content img {
+            width: 100%;
+            max-width: 250px;
+            margin: 1rem 0;
+        }
+
         .modal-content button {
-            padding: 0.6rem 1.5rem; border: none; background: #d40055;
-            color: #fff; border-radius: 5px; cursor: pointer; font-size: 1rem;
+            padding: 0.6rem 1.5rem;
+            border: none;
+            background: #d40055;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
         }
     </style>
 </head>
 <body>
 
     <div class="raffle-container">
-        <!-- Se le añade un ID a la imagen para poder seleccionarla fácilmente -->
         <img id="raffle-image" src="fondo.png" alt="Rifa Amor y Amistad">
+        <!-- El viewBox del SVG coincide con las dimensiones de la cuadrícula (970x580) -->
         <svg id="svg-overlay" viewBox="0 0 970 580" preserveAspectRatio="none"></svg>
     </div>
 
     <div class="modal" id="modal">
-        <!-- Contenido del modal no cambia -->
+        <div class="modal-content">
+            <h3 id="tituloQR">Número 00</h3>
+            <img id="imgQR" src="" alt="Código QR">
+            <br>
+            <button id="cerrarModal">Cerrar</button>
+        </div>
     </div>
 
     <script>
@@ -100,7 +131,10 @@
             // --- ELEMENTOS DEL DOM ---
             const raffleImage = document.getElementById('raffle-image');
             const svgOverlay = document.getElementById('svg-overlay');
-            const modal = document.getElementById('modal'); // Resto de elementos del modal...
+            const modal = document.getElementById('modal');
+            const tituloQR = document.getElementById('tituloQR');
+            const imgQR = document.getElementById('imgQR');
+            const cerrarModalBtn = document.getElementById('cerrarModal');
 
             // --- CONSTANTES Y ESTADO ---
             const TOTAL_NUMBERS = 100;
@@ -115,49 +149,22 @@
             };
             let soldNumbers = new Set(JSON.parse(localStorage.getItem('soldRaffleNumbers') || '[]'));
             
-            // --- FUNCIÓN PRINCIPAL DE ALINEACIÓN ---
-            /**
-             * Calcula y aplica la posición y el tamaño del SVG overlay basándose
-             * en las dimensiones reales de la imagen cargada.
-             */
+            // --- FUNCIÓN PRINCIPAL DE ALINEACIÓN DINÁMICA ---
             function updateOverlayPosition() {
-                // Obtiene las dimensiones renderizadas de la imagen en la pantalla
                 const renderedWidth = raffleImage.offsetWidth;
                 const renderedHeight = raffleImage.offsetHeight;
-
-                // Calcula las proporciones (ratios)
                 const leftRatio = GRID_PROPORTIONS.X / GRID_PROPORTIONS.ORIGINAL_IMG_WIDTH;
                 const topRatio = GRID_PROPORTIONS.Y / GRID_PROPORTIONS.ORIGINAL_IMG_HEIGHT;
                 const widthRatio = GRID_PROPORTIONS.WIDTH / GRID_PROPORTIONS.ORIGINAL_IMG_WIDTH;
                 const heightRatio = GRID_PROPORTIONS.HEIGHT / GRID_PROPORTIONS.ORIGINAL_IMG_HEIGHT;
 
-                // Aplica los ratios a las dimensiones actuales para posicionar el SVG
                 svgOverlay.style.left = `${renderedWidth * leftRatio}px`;
                 svgOverlay.style.top = `${renderedHeight * topRatio}px`;
                 svgOverlay.style.width = `${renderedWidth * widthRatio}px`;
                 svgOverlay.style.height = `${renderedHeight * heightRatio}px`;
             }
 
-            // --- INICIALIZACIÓN Y EVENTOS ---
-            
-            // Llama a la función de alineación una vez que la imagen esté completamente cargada.
-            // Esto es crucial para obtener las dimensiones correctas.
-            if (raffleImage.complete) {
-                // Si la imagen ya está en caché, se ejecuta inmediatamente
-                updateOverlayPosition();
-            } else {
-                // De lo contrario, espera al evento 'load'
-                raffleImage.addEventListener('load', updateOverlayPosition);
-            }
-
-            // Vuelve a alinear la cuadrícula si el tamaño de la ventana cambia
-            window.addEventListener('resize', updateOverlayPosition);
-
-
-            // --- LÓGICA DE LA RIFA (GENERACIÓN, MODAL, VENTA) ---
-            // (Esta parte del código es idéntica a la versión anterior y funciona perfectamente
-            // con el nuevo sistema de alineación dinámica)
-
+            // --- GENERACIÓN DE LA CUADRÍCULA Y LÓGICA DE RIFA ---
             const GRID_WIDTH = 970;
             const GRID_HEIGHT = 580;
             const COLUMNS = 10;
@@ -184,12 +191,73 @@
                     rect.classList.add('sold');
                 }
                 
-                rect.addEventListener('click', () => { /* ... lógica del modal ... */ });
+                rect.addEventListener('click', () => openQRModal(numStr));
                 svgOverlay.appendChild(rect);
             }
 
-            // El resto de la lógica (modal, venta con la tecla 'V', etc.) va aquí...
+            // --- FUNCIONES AUXILIARES ---
+            const saveState = () => {
+                localStorage.setItem('soldRaffleNumbers', JSON.stringify([...soldNumbers]));
+            };
 
+            const markAsSold = (numStr) => {
+                const rect = svgOverlay.querySelector(`[data-num='${numStr}']`);
+                if (rect) {
+                    rect.classList.add('sold');
+                }
+            };
+
+            function openQRModal(numStr) {
+                if (soldNumbers.has(numStr)) return;
+                tituloQR.textContent = `Número ${numStr}`;
+                imgQR.src = 'qrnequi.png';
+                modal.classList.add('visible');
+            }
+
+            function closeQRModal() {
+                modal.classList.remove('visible');
+            }
+
+            // --- EVENT LISTENERS ---
+            
+            // Llama a la alineación cuando la imagen se carga o si ya está cargada
+            if (raffleImage.complete) {
+                updateOverlayPosition();
+            } else {
+                raffleImage.addEventListener('load', updateOverlayPosition);
+            }
+
+            // Vuelve a alinear si la ventana cambia de tamaño
+            window.addEventListener('resize', updateOverlayPosition);
+
+            // Eventos del modal
+            cerrarModalBtn.addEventListener('click', closeQRModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeQRModal();
+            });
+
+            // Evento para vender con la tecla 'V'
+            window.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'v') {
+                    const numberToSell = prompt('¿Qué número vendiste? (00-99)');
+                    if (numberToSell === null || isNaN(numberToSell) || numberToSell.trim() === '') return;
+
+                    const num = parseInt(numberToSell, 10);
+                    if (num >= 0 && num < TOTAL_NUMBERS) {
+                        const numStr = num.toString().padStart(2, '0');
+                        if (soldNumbers.has(numStr)) {
+                            alert(`El número ${numStr} ya estaba vendido.`);
+                        } else {
+                            soldNumbers.add(numStr);
+                            markAsSold(numStr);
+                            saveState();
+                            alert(`El número ${numStr} ha sido marcado como vendido.`);
+                        }
+                    } else {
+                        alert('Número inválido. Debe ser entre 00 y 99.');
+                    }
+                }
+            });
         });
     </script>
 </body>
