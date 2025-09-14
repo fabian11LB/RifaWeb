@@ -26,9 +26,9 @@
 
     .grid {
       position: absolute;
-      top: 57%;   /* 🔽 baja la cuadrícula */
+      top: calc(57% - 30px);   /* sube la cuadrícula 30px */
       left: 50%;
-      transform: translateX(-50%) scale(1.1); /* centra y agranda un poco */
+      transform: translateX(-50%) scale(1.25); /* escala un 15% más (1.1 → 1.25) */
       width: 65%;   /* ancho relativo al poster */
       height: 32%;  /* alto relativo al poster */
       display: grid;
