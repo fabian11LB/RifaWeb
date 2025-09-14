@@ -2,67 +2,49 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Rifa – LocalStorage + SVG</title>
+  <title>Rifa – Clickable Grid</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body{
-      font-family:Segoe UI,Arial,Helvetica,sans-serif;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      min-height:100vh;
-      background:#f8f8f8;
+      display:flex;justify-content:center;align-items:center;
+      min-height:100vh;background:#f8f8f8;font-family:sans-serif;
     }
     .contenedor{
       position:relative;
-      width:500px;   /* Ajusta tamaño visible */
+      width:500px;   /* tamaño visible */
       max-width:100%;
     }
     .contenedor img{
       width:100%;
       display:block;
-      border-radius:8px;
     }
     .contenedor svg{
-      position:absolute;
-      top:0;left:0;
+      position:absolute;top:0;left:0;
       width:100%;height:100%;
     }
     rect{
       fill:transparent;
-      stroke:rgba(0,0,0,.15);
       cursor:pointer;
     }
-    rect.vendido{
-      fill:rgba(229,57,53,.45);
-    }
-    text{
-      font-size:12px;
-      fill:black;
-      pointer-events:none; /* clic solo en rect */
-    }
+    rect.vendido{fill:rgba(229,57,53,0.45);}
     /* MODAL */
     .modal{
       position:fixed;inset:0;
-      background:rgba(0,0,0,.55);
+      background:rgba(0,0,0,0.6);
       display:flex;align-items:center;justify-content:center;
       display:none;
     }
     .modal.visible{display:flex}
-    .modal-content{
-      background:#fff;padding:1rem;border-radius:8px;text-align:center;max-width:320px
-    }
-    .modal-content img{width:100%;margin:1rem 0}
-    .modal-content button{
-      padding:.4rem 1rem;border:none;background:#d40055;color:#fff;border-radius:4px;cursor:pointer
-    }
+    .modal-content{background:#fff;padding:1rem;border-radius:8px;text-align:center}
+    .modal-content img{width:200px;margin:1rem 0}
+    .modal-content button{padding:.5rem 1rem;background:#d40055;color:#fff;border:none;border-radius:4px;cursor:pointer}
   </style>
 </head>
 <body>
 
 <div class="contenedor">
-  <img src="fondo.png" alt="Rifa fondo">
-  <svg id="overlay"></svg>
+  <img src="fondo.png" alt="Rifa">
+  <svg id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg>
 </div>
 
 <!-- Modal -->
@@ -76,64 +58,52 @@
 </div>
 
 <script>
-  const overlay=document.getElementById("overlay");
-  const filas=10,columnas=10;
-  const vendidos=new Set(JSON.parse(localStorage.getItem("vendidos")||"[]"));
+const overlay=document.getElementById("overlay");
+const filas=10, columnas=10;
+const vendidos=new Set(JSON.parse(localStorage.getItem("vendidos")||"[]"));
 
-  function crearOverlay(){
-    overlay.innerHTML="";
-    for(let f=0;f<filas;f++){
-      for(let c=0;c<columnas;c++){
-        let num=f*10+c;
-        let txt=num.toString().padStart(2,"0");
+// Creamos cuadrícula relativa al viewBox (1000x1000 → % flexible)
+const cellW=1000/columnas;
+const cellH=1000/filas;
 
-        // casilla
-        let rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
-        rect.setAttribute("x",`${c*10}%`);
-        rect.setAttribute("y",`${f*10}%`);
-        rect.setAttribute("width","10%");
-        rect.setAttribute("height","10%");
-        rect.dataset.num=num;
-        if(vendidos.has(num))rect.classList.add("vendido");
-        rect.addEventListener("click",()=>abrirQR(num));
-        overlay.appendChild(rect);
+for(let f=0;f<filas;f++){
+  for(let c=0;c<columnas;c++){
+    let num=f*10+c;
+    let rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    rect.setAttribute("x",c*cellW);
+    rect.setAttribute("y",f*cellH);
+    rect.setAttribute("width",cellW);
+    rect.setAttribute("height",cellH);
+    rect.dataset.num=num;
+    if(vendidos.has(num)) rect.classList.add("vendido");
+    rect.addEventListener("click",()=>abrirQR(num));
+    overlay.appendChild(rect);
+  }
+}
 
-        // texto
-        let text=document.createElementNS("http://www.w3.org/2000/svg","text");
-        text.setAttribute("x",`${c*10+5}%`);
-        text.setAttribute("y",`${f*10+6}%`);
-        text.setAttribute("text-anchor","middle");
-        text.textContent=txt;
-        overlay.appendChild(text);
-      }
+function abrirQR(num){
+  if(vendidos.has(num)) return;
+  document.getElementById("tituloQR").textContent="Número "+num.toString().padStart(2,"0");
+  document.getElementById("modal").classList.add("visible");
+}
+
+document.getElementById("cerrarModal").onclick=()=>document.getElementById("modal").classList.remove("visible");
+
+// vender con tecla V
+window.addEventListener("keydown",e=>{
+  if(e.key.toLowerCase()==="v"){
+    let n=prompt("¿Qué número vendiste? (00-99)");
+    if(!n) return;
+    let num=parseInt(n,10);
+    if(num>=0&&num<100){
+      vendidos.add(num);
+      localStorage.setItem("vendidos",JSON.stringify([...vendidos]));
+      [...overlay.children].forEach(r=>{
+        if(r.dataset.num==num) r.classList.add("vendido");
+      });
     }
   }
-
-  function abrirQR(num){
-    if(vendidos.has(num))return;
-    document.getElementById("tituloQR").textContent="Número "+num.toString().padStart(2,"0");
-    document.getElementById("modal").classList.add("visible");
-  }
-
-  document.getElementById("cerrarModal").onclick=()=>{
-    document.getElementById("modal").classList.remove("visible");
-  }
-
-  // vender con tecla V
-  window.addEventListener("keydown",e=>{
-    if(e.key.toLowerCase()==="v"){
-      let n=prompt("¿Qué número vendiste? (00-99)");
-      if(!n)return;
-      let num=parseInt(n,10);
-      if(num>=0 && num<100){
-        vendidos.add(num);
-        localStorage.setItem("vendidos",JSON.stringify([...vendidos]));
-        crearOverlay();
-      }
-    }
-  });
-
-  crearOverlay();
+});
 </script>
 
 </body>
