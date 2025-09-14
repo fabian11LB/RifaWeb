@@ -1,84 +1,158 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Rifa</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body {
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      min-height:100vh;
-      margin:0;
-      background:#fff;
-    }
+<meta charset="UTF-8">
+<title>Rifa con SVG Overlay</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background: #fafafa;
+  }
 
-    .container {
-      position:relative;
-      display:inline-block;
-    }
+  .wrap {
+    width: min(800px, 95vw); /* controla el tamaño visible */
+  }
 
-    .poster {
-      display:block;
-      max-width:75%;
-      height:auto;
-    }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
 
-    /* --- VALORES ABSOLUTOS MODIFICADOS (sin cálculos) --- */
-    .grid {
-      position:absolute;
-      top: 45%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80%;
-      height: 48%;
-      display:grid;
-      grid-template-columns:repeat(10,1fr);
-      grid-template-rows:repeat(10,1fr);
-      pointer-events:none;
-      z-index:2;
-    }
+  rect.cell {
+    fill: rgba(255,255,255,0); /* invisible pero clickeable */
+    cursor: pointer;
+    transition: fill .2s;
+  }
+  rect.cell:hover {
+    fill: rgba(0,0,0,0.08); /* hover */
+  }
+  rect.cell.vendido {
+    fill: rgba(229,57,53,0.45); /* marcado vendido */
+  }
 
-    .cell {
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      font-size:12px;
-      font-weight:600;
-      color:#000;
-    }
-
-    /* opcional: pequeños ajustes visuales para que los números no se vean demasiado grandes */
-    @media (max-width:420px){
-      .grid{ width:86%; height:46%; top:52%; }
-      .cell{ font-size:10px; }
-    }
-  </style>
+  /* Modal simple */
+  .modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: none; justify-content: center; align-items: center;
+  }
+  .modal.visible { display: flex; }
+  .modal-content {
+    background: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 300px;
+  }
+  .modal-content img { max-width: 100%; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <img src="fondo.png" alt="Póster" class="poster">
 
-    <div class="grid" id="grid">
-      <script>
-        for (let i = 0; i < 100; i++){
-          const d = document.createElement('div');
-          d.className = 'cell';
-          d.textContent = i.toString().padStart(2,'0');
-          document.currentScript.parentElement.appendChild(d);
-        }
-      </script>
-    </div>
+<div class="wrap">
+  <svg id="svgRifa" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3 id="tituloQR">Número 00</h3>
+    <img id="imgQR" src="qrnequi.png" alt="QR Nequi">
+    <br><br>
+    <button id="cerrarModal">Cerrar</button>
   </div>
+</div>
+
+<script>
+(async function(){
+  // --- Carga imagen para conocer dimensiones ---
+  const src = "fondo.png";
+  const img = new Image();
+  img.src = src;
+  await img.decode();
+  const W = img.naturalWidth;
+  const H = img.naturalHeight;
+
+  // --- Crea SVG con viewBox ---
+  const svg = document.getElementById("svgRifa");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+  // Imagen dentro del SVG
+  const svgns = "http://www.w3.org/2000/svg";
+  const image = document.createElementNS(svgns, "image");
+  image.setAttribute("href", src);
+  image.setAttribute("x", 0);
+  image.setAttribute("y", 0);
+  image.setAttribute("width", W);
+  image.setAttribute("height", H);
+  svg.appendChild(image);
+
+  // --- Definir posición de la cuadrícula dentro de la imagen ---
+  const grid = {
+    x: 100,  // ajusta según donde empieza la grilla en tu fondo
+    y: 780,
+    width: 650,
+    height: 600
+  };
+
+  const cols = 10, rows = 10;
+  const cellW = grid.width / cols;
+  const cellH = grid.height / rows;
+
+  // Recuperar vendidos del localStorage
+  const vendidos = new Set(JSON.parse(localStorage.getItem("vendidos") || "[]"));
+
+  // --- Crear las celdas ---
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const num = (r*cols + c).toString().padStart(2,'0');
+      const rect = document.createElementNS(svgns, "rect");
+      rect.setAttribute("x", grid.x + c*cellW);
+      rect.setAttribute("y", grid.y + r*cellH);
+      rect.setAttribute("width", cellW);
+      rect.setAttribute("height", cellH);
+      rect.classList.add("cell");
+      rect.dataset.num = num;
+      if (vendidos.has(num)) rect.classList.add("vendido");
+
+      rect.addEventListener("click", ()=>abrirQR(num, rect));
+      svg.appendChild(rect);
+    }
+  }
+
+  // --- Modal ---
+  const modal = document.getElementById("modal");
+  const titulo = document.getElementById("tituloQR");
+  document.getElementById("cerrarModal").onclick = ()=>modal.classList.remove("visible");
+
+  function abrirQR(num, rectEl){
+    if (rectEl.classList.contains("vendido")) return;
+    titulo.textContent = "Número " + num;
+    modal.classList.add("visible");
+  }
+
+  // --- Atajo V: marcar vendido manualmente ---
+  window.addEventListener("keydown", e=>{
+    if (e.key.toLowerCase()==="v"){
+      const n = prompt("¿Qué número vendiste? (00-99)");
+      if (!n) return;
+      const num = n.padStart(2,"0");
+      const rect = svg.querySelector(`rect[data-num="${num}"]`);
+      if (rect){
+        rect.classList.add("vendido");
+        vendidos.add(num);
+        localStorage.setItem("vendidos", JSON.stringify([...vendidos]));
+      }
+    }
+  });
+
+})();
+</script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
