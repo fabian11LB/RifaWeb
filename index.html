@@ -5,120 +5,53 @@
     <title>Rifa Amor y Amistad</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Estilos generales y de fuente */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Segoe UI, Arial, Helvetica, sans-serif;
-        }
-
-        /* Contenedor principal para centrar el contenido */
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #fce4ec; /* Un fondo suave para complementar la imagen */
-        }
-
-        /* Contenedor de la rifa que contiene la imagen y el SVG */
-        .raffle-container {
-            position: relative;
-            /* Establece un tamaño máximo para que sea visible sin ocupar toda la pantalla */
-            width: 100%;
-            max-width: 720px; /* Ancho original de la imagen */
-            /* La altura se ajustará automáticamente manteniendo la proporción */
-        }
-
-        /* La imagen de fondo se ajusta al contenedor */
-        .raffle-container img#background-image {
-            width: 100%;
-            height: auto;
-            display: block; /* Elimina espacio extra debajo de la imagen */
-        }
+        /* (Estilos CSS sin cambios... se mantienen los de la respuesta anterior) */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Segoe UI, Arial, Helvetica, sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #fce4ec; }
+        .raffle-container { position: relative; width: 100%; max-width: 720px; }
+        .raffle-container img#background-image { width: 100%; height: auto; display: block; }
+        .raffle-container svg#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
-        /* Capa SVG posicionada exactamente sobre la imagen */
-        .raffle-container svg#overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Estilo de las casillas de la rifa en el SVG */
+        /* -- ESTILOS SVG ACTUALIZADOS -- */
         .raffle-cell {
-            fill: transparent; /* Fondo transparente por defecto */
-            stroke: rgba(0, 0, 0, 0.15); /* Borde sutil para depuración (opcional) */
+            fill: transparent;
+            stroke: rgba(0, 0, 0, 0.1);
             stroke-width: 1px;
             cursor: pointer;
             transition: fill 0.2s;
         }
-
-        /* Estilo para las casillas vendidas */
-        .raffle-cell.sold {
-            fill: rgba(229, 57, 53, 0.45); /* Color rojo semitransparente */
-            cursor: not-allowed; /* Cambia el cursor para indicar que no se puede seleccionar */
+        .raffle-cell-group.sold .raffle-cell {
+            fill: rgba(229, 57, 53, 0.45);
+            cursor: not-allowed;
+        }
+        /* Estilo para la 'X' de vendido */
+        .sold-mark {
+            font-family: Arial, sans-serif;
+            font-size: 50px; /* Tamaño de la 'X' */
+            fill: #b71c1c; /* Color rojo oscuro para la 'X' */
+            text-anchor: middle; /* Centrado horizontal */
+            dominant-baseline: central; /* Centrado vertical */
+            pointer-events: none; /* La 'X' no interfiere con los clics */
         }
 
-        /* Estilos para el Modal del código QR */
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.55);
-            display: none; /* Oculto por defecto */
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            z-index: 1000;
-        }
-
-        .modal.visible {
-            display: flex; /* Se muestra al añadir la clase 'visible' */
-        }
-
-        .modal-content {
-            background: #fff;
-            padding: 1.2rem 1.5rem;
-            border-radius: 8px;
-            text-align: center;
-            max-width: 320px;
-        }
-
-        .modal-content img {
-            width: 100%;
-            max-width: 250px;
-            margin: 0.8rem 0;
-        }
-
-        .modal-content button {
-            padding: 0.6rem 1.2rem;
-            border: none;
-            background: #d40055;
-            color: #fff;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
+        /* (Estilos del Modal sin cambios...) */
+        .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: none; align-items: center; justify-content: center; padding: 1rem; z-index: 1000; }
+        .modal.visible { display: flex; }
+        .modal-content { background: #fff; padding: 1.2rem 1.5rem; border-radius: 8px; text-align: center; max-width: 320px; }
+        .modal-content img { width: 100%; max-width: 250px; margin: 0.8rem 0; }
+        .modal-content button { padding: 0.6rem 1.2rem; border: none; background: #d40055; color: #fff; border-radius: 4px; cursor: pointer; font-size: 1rem; }
     </style>
 </head>
 <body>
 
-    <!-- Contenedor principal de la rifa -->
     <div class="raffle-container">
-        <!-- Imagen de fondo de la rifa -->
         <img id="background-image" src="fondo.png" alt="Fondo de la Rifa">
-        
-        <!-- Capa SVG para la interactividad -->
         <svg id="overlay" viewBox="0 0 720 1280" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
 
-    <!-- Estructura del Modal para mostrar el QR -->
     <div class="modal" id="modal">
         <div class="modal-content">
             <h3 id="qrTitle">Número 00</h3>
-            <!-- Asegúrate de tener una imagen qrnequi.png en la misma carpeta -->
             <img id="qrImage" src="qrnequi.png" alt="Código QR de Nequi">
             <br>
             <button id="closeModal">Cerrar</button>
@@ -126,93 +59,100 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
             const TOTAL_NUMBERS = 100;
-            // Coordenadas y dimensiones de la cuadrícula completa y de una celda individual
             const gridCoords = { x: 87.50, y: 561.13, width: 545.00, height: 513.00 };
-            const cellCoords = { width: 54.00, height: 51.00 }; // Ancho y alto de cada celda
+            const cellCoords = { width: 54.00, height: 51.00 };
 
             const svgOverlay = document.getElementById('overlay');
             const modal = document.getElementById('modal');
             const qrTitle = document.getElementById('qrTitle');
             const closeModalBtn = document.getElementById('closeModal');
             
-            // Carga los números vendidos desde localStorage o inicializa un Set vacío
-            const soldNumbers = new Set(JSON.parse(localStorage.getItem('soldRaffleNumbers') || '[]'));
+            // El Set de números vendidos ahora se carga desde el archivo JSON
+            let soldNumbers = new Set();
 
             /**
-             * Genera las casillas interactivas (rect) en el SVG.
+             * Carga los números vendidos desde el archivo 'vendidos.json'.
+             * Esta es la "fuente de la verdad" para todos los visitantes.
+             */
+            async function loadSoldNumbers() {
+                try {
+                    const response = await fetch('vendidos.json?cachebust=' + new Date().getTime());
+                    if (!response.ok) throw new Error('No se encontró el archivo de vendidos.');
+                    const soldArray = await response.json();
+                    soldNumbers = new Set(soldArray.map(String));
+                } catch (error) {
+                    console.warn(error.message, "Mostrando la rifa sin números vendidos.");
+                    soldNumbers = new Set();
+                }
+                // (Opcional) Guardar en localStorage para el admin
+                localStorage.setItem('soldRaffleNumbers', JSON.stringify([...soldNumbers]));
+            }
+
+            /**
+             * Genera la cuadrícula interactiva en el SVG.
              */
             function createRaffleGrid() {
+                svgOverlay.innerHTML = ''; // Limpiar la cuadrícula antes de volver a dibujarla
                 for (let i = 0; i < TOTAL_NUMBERS; i++) {
                     const row = Math.floor(i / 10);
                     const col = i % 10;
+                    const x = gridCoords.x + (col * cellCoords.width);
+                    const y = gridCoords.y + (row * cellCoords.height);
+
+                    // Crear un grupo para la celda y la 'X'
+                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    group.classList.add('raffle-cell-group');
+                    group.dataset.number = i;
 
                     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                    rect.setAttribute('x', gridCoords.x + (col * cellCoords.width));
-                    rect.setAttribute('y', gridCoords.y + (row * cellCoords.height));
+                    rect.setAttribute('x', x);
+                    rect.setAttribute('y', y);
                     rect.setAttribute('width', cellCoords.width);
                     rect.setAttribute('height', cellCoords.height);
                     rect.classList.add('raffle-cell');
-                    rect.dataset.number = i; // Asigna el número de la casilla
+                    
+                    group.appendChild(rect);
 
-                    // Si el número ya está vendido, añade la clase correspondiente
                     if (soldNumbers.has(i.toString())) {
-                        rect.classList.add('sold');
+                        group.classList.add('sold');
+                        
+                        // Añadir la 'X' si el número está vendido
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', x + cellCoords.width / 2);
+                        text.setAttribute('y', y + cellCoords.height / 2);
+                        text.classList.add('sold-mark');
+                        text.textContent = 'X';
+                        group.appendChild(text);
+                    } else {
+                        // Solo los grupos no vendidos deben ser clickeables
+                        group.addEventListener('click', handleCellClick);
                     }
-
-                    rect.addEventListener('click', handleCellClick);
-                    svgOverlay.appendChild(rect);
+                    
+                    svgOverlay.appendChild(group);
                 }
             }
-
-            /**
-             * Maneja el evento de clic en una de las casillas de la rifa.
-             * @param {Event} event - El objeto del evento de clic.
-             */
+            
             function handleCellClick(event) {
-                const cell = event.target;
-                const number = cell.dataset.number;
-
-                // Si la casilla ya está vendida, no hace nada
-                if (soldNumbers.has(number)) {
-                    console.log(`El número ${number.padStart(2, '0')} ya ha sido vendido.`);
-                    return;
-                }
-                
-                // Muestra el modal con la información del número seleccionado
+                const group = event.currentTarget; // El evento está en el grupo
+                const number = group.dataset.number;
                 showModal(number);
             }
 
-            /**
-             * Muestra el modal con el número de la rifa.
-             * @param {string} number - El número de la casilla seleccionada.
-             */
             function showModal(number) {
                 qrTitle.textContent = `Número ${number.toString().padStart(2, '0')}`;
                 modal.classList.add('visible');
             }
-
-            /**
-             * Oculta el modal.
-             */
-            function hideModal() {
-                modal.classList.remove('visible');
-            }
             
-            // Event listener para cerrar el modal
+            function hideModal() { modal.classList.remove('visible'); }
             closeModalBtn.addEventListener('click', hideModal);
-            // También cierra el modal si se hace clic fuera del contenido
-            modal.addEventListener('click', function(event) {
-                if (event.target === modal) {
-                    hideModal();
-                }
-            });
+            modal.addEventListener('click', (event) => { if (event.target === modal) hideModal(); });
 
+            // --- FUNCIONES DE ADMINISTRADOR ---
 
             /**
-             * Función para marcar un número como vendido. Se activa con la tecla 'V'.
-             * @param {string} numberStr - El número a marcar como vendido.
+             * (Admin) Marca un número como vendido, actualizando localStorage.
              */
             function sellNumber(numberStr) {
                 const number = parseInt(numberStr, 10);
@@ -220,44 +160,62 @@
                     alert('Por favor, introduce un número válido entre 00 y 99.');
                     return;
                 }
-
+                
+                const localSoldNumbers = new Set(JSON.parse(localStorage.getItem('soldRaffleNumbers') || '[]'));
                 const numAsString = number.toString();
-                if (soldNumbers.has(numAsString)) {
+
+                if (localSoldNumbers.has(numAsString)) {
                     alert(`El número ${numAsString.padStart(2, '0')} ya estaba vendido.`);
                     return;
                 }
 
-                // Añade el número al Set de vendidos
-                soldNumbers.add(numAsString);
-                // Actualiza el localStorage
-                localStorage.setItem('soldRaffleNumbers', JSON.stringify([...soldNumbers]));
-
-                // Actualiza visualmente la casilla en el SVG
-                const cellToUpdate = svgOverlay.querySelector(`[data-number='${number}']`);
-                if (cellToUpdate) {
-                    cellToUpdate.classList.add('sold');
-                }
+                localSoldNumbers.add(numAsString);
+                localStorage.setItem('soldRaffleNumbers', JSON.stringify([...localSoldNumbers]));
                 
-                console.log(`Número vendido: ${numAsString.padStart(2, '0')}`);
-                alert(`¡Número ${numAsString.padStart(2, '0')} marcado como vendido!`);
+                // Actualiza visualmente la cuadrícula para el admin
+                soldNumbers = localSoldNumbers;
+                createRaffleGrid();
+
+                alert(`¡Número ${numAsString.padStart(2, '0')} marcado como vendido localmente! Presiona 'E' para exportar.`);
             }
 
-            // Event listener para la tecla 'V' para marcar un número como vendido
+            /**
+             * (Admin) Exporta los números vendidos de localStorage a un archivo JSON.
+             */
+            function exportSoldNumbers() {
+                const localSoldNumbers = localStorage.getItem('soldRaffleNumbers') || '[]';
+                const blob = new Blob([localSoldNumbers], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'vendidos.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert('Archivo "vendidos.json" descargado. Súbelo a tu repositorio de GitHub.');
+            }
+
             window.addEventListener('keydown', function(e) {
+                // Tecla 'V' para VENDER (solo para el admin)
                 if (e.key.toLowerCase() === 'v') {
-                    // Evita que el prompt se active si se está escribiendo en un input
-                    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
-                        return;
-                    }
-                    const numberToSell = prompt('¿Qué número vendiste? (00-99)');
+                    const numberToSell = prompt('ADMIN: ¿Qué número vendiste? (00-99)');
                     if (numberToSell !== null && numberToSell.trim() !== '') {
                         sellNumber(numberToSell);
                     }
                 }
+
+                // Tecla 'E' para EXPORTAR (solo para el admin)
+                if (e.key.toLowerCase() === 'e') {
+                    if (confirm('ADMIN: ¿Quieres descargar el archivo "vendidos.json" con los cambios actuales?')) {
+                        exportSoldNumbers();
+                    }
+                }
             });
 
-            // Inicializa la cuadrícula de la rifa al cargar la página
-            createRaffleGrid();
+            // --- INICIALIZACIÓN ---
+            await loadSoldNumbers(); // Cargar los datos del archivo
+            createRaffleGrid();      // Dibujar la cuadrícula con los datos cargados
         });
     </script>
 
