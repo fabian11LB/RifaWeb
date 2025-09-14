@@ -1,158 +1,248 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Rifa – Amor y Amistad</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rifa — Alineada al póster</title>
   <style>
+    :root{
+      --poster-w: 720px;
+      --poster-h: 720px;
+      --bg-size: 300%;       /* % del ancho del contenedor: zoom del fondo */
+      --bg-pos-x: 50% ;      /* posición horizontal del fondo */
+      --bg-pos-y: 68% ;      /* posición vertical del fondo */
+      --cell-font: 14px;
+    }
     *{box-sizing:border-box;margin:0;padding:0;font-family:Segoe UI,Arial,Helvetica,sans-serif}
     body{
       min-height:100vh;
-      background:url("fondo.png") top center/contain no-repeat;
       display:flex;
-      justify-content:center;
       align-items:center;
+      justify-content:center;
+      background:#fff;
+      padding:18px;
+    }
+
+    /* Poster: el contenedor que tendrá exactamente el tamaño de la rejilla */
+    .poster{
       position:relative;
+      width:var(--poster-w);
+      height:var(--poster-h);
+      overflow:hidden;
+      border-radius:6px;
+      box-shadow:0 8px 28px rgba(0,0,0,.12);
     }
 
-    /* CONTENEDOR DE LA REJILLA */
+    /* Fondo: la imagen escalada/posicionada dentro del contenedor */
+    .poster::before{
+      content:"";
+      position:absolute; inset:0;
+      background-image: url('fondo.png');
+      background-repeat:no-repeat;
+      background-size: var(--bg-size);
+      background-position: var(--bg-pos-x) var(--bg-pos-y);
+      filter: none;
+      pointer-events:none;
+    }
+
+    /* Grilla overlay que ocupa TODO el poster */
     .grilla{
-      position:absolute;
-      /* Ajusta estos valores hasta que coincida con la cuadrícula de fondo */
-      top: 580px;   /* posición vertical de inicio */
-      left: 50%;
-      transform: translateX(-50%);
-      width: 720px; /* ancho total de la cuadrícula */
-      height: 720px;/* alto total de la cuadrícula */
+      position:absolute; inset:0;
       display:grid;
-      grid-template-columns:repeat(10, 1fr);
-      grid-template-rows:repeat(10, 1fr);
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      gap:0;
+      user-select:none;
+      align-items:center;
+      justify-items:center;
+      z-index:2;
+      padding:6px; /* pequeño margen si quieres borde alrededor */
+      background: transparent;
     }
 
-    /* BOTONES */
+    /* botones de cada celda */
     .grilla button{
-      border:1px solid rgba(0,0,0,.25);
-      background:transparent;
+      width:100%; height:100%;
+      border: 1px solid rgba(103,24,34,0.25);
+      background: rgba(255,255,255,0.0);
       cursor:pointer;
-      font-size:18px;
-      font-weight:600;
-      color:#000;
-      transition:all .2s;
+      font-size:var(--cell-font);
+      color:#5a2a2e;
+      display:flex;align-items:center;justify-content:center;
     }
-    .grilla.ocultarNum button{color:transparent}
+    .grilla.ocultarNum button{ color: transparent; }
 
-    /* VENDIDO */
     .grilla button.vendido{
-      background:rgba(229,57,53,.45);
+      background: rgba(229,57,53,0.45);
+      color:#501217;
       position:relative;
     }
     .grilla button.vendido::after{
-      content:'';position:absolute;
-      inset:0;margin:auto;
-      width:90%;height:2px;
-      background:#b71c1c;
+      content:''; position:absolute; left:5%; right:5%; top:50%; height:2px; transform:translateY(-50%); background:#b71c1c;
     }
 
-    /* MODAL QR */
-    .modal{
-      position:fixed;inset:0;
-      background:rgba(0,0,0,.55);
-      display:flex;align-items:center;justify-content:center;
-      padding:1rem;display:none;
-    }
-    .modal.visible{display:flex}
-    .modal-content{
-      background:#fff;
-      padding:1.2rem 1.5rem;
-      border-radius:8px;
-      text-align:center;
-      max-width:320px;
-      box-shadow:0 2px 10px rgba(0,0,0,.4);
-    }
-    .modal-content img{width:100%;margin:.8rem 0}
-    .modal-content button{
-      padding:.4rem 1rem;
-      border:none;
-      background:#d40055;
-      color:#fff;
-      border-radius:4px;
-      cursor:pointer;
+    /* modal */
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,.55); z-index:40; }
+    .modal.visible{ display:flex; }
+    .modal .card{ background:#fff; padding:12px; border-radius:8px; max-width:360px; width:92%; text-align:center; box-shadow:0 6px 20px rgba(0,0,0,.2); }
+    .modal img{ width:100%; height:auto; display:block; margin:.6rem 0; }
+    .hint{ margin-top:10px; font-size:12px; color:#444; text-align:center; }
+    @media (max-width:420px){
+      :root{ --poster-w: 320px; --poster-h: 320px; --cell-font: 10px; }
     }
   </style>
 </head>
 <body>
 
-  <div class="grilla" id="grilla"></div>
+  <div class="poster" id="poster">
+    <div class="grilla" id="grilla" aria-hidden="false"></div>
+  </div>
 
-  <div class="modal" id="modal">
-    <div class="modal-content">
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="card">
       <h3 id="tituloQR">Número 00</h3>
-      <img id="imgQR" src="" alt="Código QR">
-      <br>
-      <button id="cerrarModal">Cerrar</button>
+      <img id="imgQR" src="qrnequi.png" alt="Código QR">
+      <div style="margin-top:.6rem">
+        <button id="cerrarModal" style="padding:.45rem .9rem;border:none;background:#d40055;color:#fff;border-radius:6px;cursor:pointer">Cerrar</button>
+      </div>
     </div>
   </div>
 
+  <div class="hint" id="status">
+    Atajos: <strong>V</strong> vender · <strong>G</strong> ocultar/mostrar · <strong>A</strong> ajustar fondo (flechas / +/-)
+  </div>
+
 <script>
-    // --- Fallback seguro para localStorage ---
-    function safeStorage(){
-      try{
-        const test="__test__";
-        localStorage.setItem(test,test);
-        localStorage.removeItem(test);
-        return localStorage;
-      }catch(e){
-        console.warn("⚠ localStorage no disponible, usando memoria.");
-        let memory={};
-        return {
-          getItem:k=>memory[k]||null,
-          setItem:(k,v)=>{memory[k]=v},
-          removeItem:k=>{delete memory[k]}
-        }
-      }
+/*
+  Configuración rápida para alinear:
+  - posterW / posterH: tamaño del contenedor (en px)
+  - bgSizePercent: cuánto zoom aplicar al fondo (porcentaje)
+  - bgPosX / bgPosY: posicionamiento del fondo (porcentaje)
+  Modifica estos valores para alinear exactamente la zona impresa del póster
+*/
+const posterW = 720;         // ancho del área de la cuadrícula (px)
+const posterH = 720;         // alto del área de la cuadrícula (px)
+let bgSizePercent = 300;     // background-size (ej. 300%)
+let bgPosX = 50;             // background-position x (porcentaje)
+let bgPosY = 68;             // background-position y (porcentaje)
+
+/* ---- storage (sin fallback) ---- */
+const storage = localStorage;
+
+/* Aplica variables CSS iniciales */
+const root = document.documentElement;
+root.style.setProperty('--poster-w', posterW + 'px');
+root.style.setProperty('--poster-h', posterH + 'px');
+root.style.setProperty('--bg-size', bgSizePercent + '%');
+root.style.setProperty('--bg-pos-x', bgPosX + '%');
+root.style.setProperty('--bg-pos-y', bgPosY + '%');
+
+/* Ajusta tamaño de fuente de celdas en base a la altura del contenedor */
+const cellFont = Math.max(10, Math.floor(Math.min(posterW, posterH) / 36));
+root.style.setProperty('--cell-font', cellFont + 'px');
+
+/* ---- generación de la rejilla 10x10 ---- */
+const TOTAL = 100;
+const vendidos = new Set(JSON.parse(storage.getItem('vendidos') || '[]'));
+const grilla = document.getElementById('grilla');
+
+for (let i = 0; i < TOTAL; i++){
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = i.toString().padStart(2,'0');
+  b.dataset.num = i;
+  if (vendidos.has(i.toString())) b.classList.add('vendido');
+  b.addEventListener('click', abrirQR);
+  grilla.appendChild(b);
+}
+
+/* ---- modal QR ---- */
+function abrirQR(e){
+  const num = e.currentTarget.dataset.num;
+  if (vendidos.has(num)) return;
+  document.getElementById('tituloQR').textContent = `Número ${num.padStart(2,'0')}`;
+  document.getElementById('imgQR').src = 'qrnequi.png';
+  const m = document.getElementById('modal');
+  m.classList.add('visible'); m.setAttribute('aria-hidden','false');
+}
+document.getElementById('cerrarModal').onclick = ()=>{
+  const m = document.getElementById('modal');
+  m.classList.remove('visible'); m.setAttribute('aria-hidden','true');
+};
+
+/* ---- teclas: V vender, G ocultar, A ajustar fondo ---- */
+let ocultando = storage.getItem('ocultarNumeros') === 'true';
+grilla.classList.toggle('ocultarNum', ocultando);
+
+let ajusteActivo = false;
+const status = document.getElementById('status');
+function setStatus(){
+  status.innerHTML = `Atajos: <strong>V</strong> vender · <strong>G</strong> ${ocultando? 'mostrar' : 'ocultar'} · <strong>A</strong> ajustar fondo (${ajusteActivo? 'ON':'OFF'})`;
+}
+setStatus();
+
+window.addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase();
+  if (k === 'v'){
+    const n = prompt('¿Qué número vendiste? (00-99)');
+    if (n === null) return;
+    const num = n.toString().padStart(2,'0');
+    const btn = [...grilla.children].find(b => b.textContent === num);
+    if (btn){
+      btn.classList.add('vendido');
+      vendidos.add(parseInt(num,10).toString());
+      storage.setItem('vendidos', JSON.stringify([...vendidos]));
     }
-    const storage=safeStorage();
+    return;
+  }
+  if (k === 'g'){
+    ocultando = !ocultando;
+    grilla.classList.toggle('ocultarNum', ocultando);
+    storage.setItem('ocultarNumeros', ocultando);
+    setStatus();
+    return;
+  }
+  if (k === 'a'){
+    ajusteActivo = !ajusteActivo;
+    setStatus();
+    return;
+  }
 
-    const TOTAL=100,vendidos=new Set(JSON.parse(storage.getItem('vendidos')||'[]'));
-    const grilla=document.getElementById('grilla');
+  /* si modo ajuste activo: flechas mueven background-position, +/- cambian bgSize */
+  if (!ajusteActivo) return;
 
-    // crea botones 00-99
-    for(let i=0;i<TOTAL;i++){
-      const b=document.createElement('button');
-      b.textContent=i.toString().padStart(2,'0');
-      b.dataset.num=i;
-      b.addEventListener('click',abrirQR);
-      if(vendidos.has(i.toString())){
-        b.classList.add('vendido');
-      }
-      grilla.appendChild(b);
-    }
+  const stepPos = 0.5;   // porcentaje por pulso
+  const stepSize = 4;    // % zoom por pulso
 
-    // MODAL QR
-    function abrirQR(e){
-      const num=e.target.dataset.num;
-      if(vendidos.has(num))return;
-      document.getElementById('tituloQR').textContent=`Número ${num.padStart(2,'0')}`;
-      document.getElementById('imgQR').src='qrnequi.png';
-      document.getElementById('modal').classList.add('visible');
-    }
-    document.getElementById('cerrarModal').onclick=()=>document.getElementById('modal').classList.remove('visible');
+  if (e.key === 'ArrowUp'){ bgPosY = Math.max(0, bgPosY - stepPos); e.preventDefault(); }
+  else if (e.key === 'ArrowDown'){ bgPosY = Math.min(100, bgPosY + stepPos); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft'){ bgPosX = Math.max(0, bgPosX - stepPos); e.preventDefault(); }
+  else if (e.key === 'ArrowRight'){ bgPosX = Math.min(100, bgPosX + stepPos); e.preventDefault(); }
+  else if (e.key === '+' || e.key === '=' ){ bgSizePercent = Math.min(800, bgSizePercent + stepSize); e.preventDefault(); }
+  else if (e.key === '-' || e.key === '_'){ bgSizePercent = Math.max(50, bgSizePercent - stepSize); e.preventDefault(); }
+  else return;
 
-    // MARCAR COMO VENDIDO
-    window.addEventListener('keydown',e=>{
-      if(e.key.toLowerCase()==='v'){
-        const n=prompt('¿Qué número vendiste? (00-99)');
-        if(n===null)return;
-        const num=n.padStart(2,'0');
-        const btn=[...grilla.children].find(b=>b.textContent===num);
-        if(btn){
-          btn.classList.add('vendido');
-          vendidos.add(parseInt(num).toString());
-          storage.setItem('vendidos',JSON.stringify([...vendidos]));
-        }
-      }
-    });
+  // aplicar cambios
+  root.style.setProperty('--bg-size', bgSizePercent + '%');
+  root.style.setProperty('--bg-pos-x', bgPosX + '%');
+  root.style.setProperty('--bg-pos-y', bgPosY + '%');
+
+  // guardamos para la próxima vez
+  storage.setItem('bgSizePercent', String(bgSizePercent));
+  storage.setItem('bgPosX', String(bgPosX));
+  storage.setItem('bgPosY', String(bgPosY));
+});
+
+/* Recuperar ajustes guardados si existen (permitir que ajustes persistan) */
+try {
+  const sSize = storage.getItem('bgSizePercent');
+  const sX = storage.getItem('bgPosX');
+  const sY = storage.getItem('bgPosY');
+  if (sSize) { bgSizePercent = Number(sSize); root.style.setProperty('--bg-size', bgSizePercent + '%'); }
+  if (sX) { bgPosX = Number(sX); root.style.setProperty('--bg-pos-x', bgPosX + '%'); }
+  if (sY) { bgPosY = Number(sY); root.style.setProperty('--bg-pos-y', bgPosY + '%'); }
+} catch(e){ /* nota: si storage falla en incógnito, el script CRASHARÁ según pediste eliminar fallback */ }
+
 </script>
-
 </body>
 </html>
