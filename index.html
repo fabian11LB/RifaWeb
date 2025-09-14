@@ -1,65 +1,72 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Rifa</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background: #fff;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      margin:0;
+      background:#fff;
     }
 
     .container {
-      position: relative;
-      display: inline-block;
+      position:relative;
+      display:inline-block;
     }
 
     .poster {
-      display: block;
-      max-width: 100%;
-      height: auto;
+      display:block;
+      max-width:100%;
+      height:auto;
     }
 
+    /* --- VALORES ABSOLUTOS MODIFICADOS (sin cálculos) --- */
     .grid {
-      position: absolute;
-      top: calc(57% - 30px);   /* sube la cuadrícula 30px */
+      position:absolute;
+      top: 55%;           /* subí la cuadrícula respecto al 57% anterior (valor fijo) */
       left: 50%;
-      transform: translateX(-50%) scale(1.25); /* escala un 15% más (1.1 → 1.25) */
-      width: 65%;   /* ancho relativo al poster */
-      height: 32%;  /* alto relativo al poster */
-      display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      grid-template-rows: repeat(10, 1fr);
-      pointer-events: none;
+      transform: translateX(-50%); /* sólo para centrar horizontalmente */
+      width: 75%;         /* antes 65% → ahora ~+15% (valor fijo) */
+      height: 37%;        /* antes 32% → ahora ~+15% (valor fijo) */
+      display:grid;
+      grid-template-columns:repeat(10,1fr);
+      grid-template-rows:repeat(10,1fr);
+      pointer-events:none; /* no bloquea la interacción con la página */
+      z-index:2;
     }
 
     .cell {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 12px;
-      font-weight: bold;
-      color: black;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-size:12px;
+      font-weight:600;
+      color:#000;
+    }
+
+    /* opcional: pequeños ajustes visuales para que los números no se vean demasiado grandes */
+    @media (max-width:420px){
+      .grid{ width:86%; height:46%; top:52%; }
+      .cell{ font-size:10px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Imagen de fondo -->
-    <img src="fondo.png" alt="Póster de rifa" class="poster">
+    <img src="fondo.png" alt="Póster" class="poster">
 
-    <!-- Cuadrícula encima -->
-    <div class="grid">
+    <div class="grid" id="grid">
       <script>
-        for (let i = 0; i < 100; i++) {
-          const div = document.createElement('div');
-          div.className = 'cell';
-          div.textContent = i.toString().padStart(2, '0');
-          document.currentScript.parentElement.appendChild(div);
+        for (let i = 0; i < 100; i++){
+          const d = document.createElement('div');
+          d.className = 'cell';
+          d.textContent = i.toString().padStart(2,'0');
+          document.currentScript.parentElement.appendChild(d);
         }
       </script>
     </div>
